@@ -4,56 +4,137 @@ import javax.swing.*;
 import java.awt.*;
 
 public class DialogoAgregarProducto extends JDialog {
-    private JTextField txtNombre, txtPrecio, txtStock;
-    private JButton btnGuardar;
+    private final JTextField txtNombre, txtPrecio, txtStock;
+    private boolean confirmado = false;
     private final ConexionBD conexion;
 
     public DialogoAgregarProducto(JFrame parent, ConexionBD conexion) {
-        super(parent, "Agregar producto", true);
+        super(parent, "Agregar Producto", true);
         this.conexion = conexion;
-        setSize(420, 300);
-        setLocationRelativeTo(parent);
-        setLayout(null);
-        setUndecorated(true);
 
-        JPanel fondo = new JPanel(null) {
+        setSize(540, 380);
+        setResizable(false);
+        setLocationRelativeTo(parent);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        // Panel de fondo con imagen
+        JPanel fondo = new JPanel(new GridBagLayout()) {
             private final Image img = new ImageIcon("src/main/resources/es/studium/recursos/FondoApp.png").getImage();
+
+            @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 g.drawImage(img, 0, 0, getWidth(), getHeight(), this);
             }
         };
-        fondo.setBounds(0, 0, 420, 300);
-        add(fondo);
+        setContentPane(fondo);
 
-        JPanel panel = new VistaLogin.RoundedPanel(40, new Color(255, 255, 255, 230));
+        // Panel blanco translúcido y centrado
+        VistaLogin.RoundedPanel panel = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 200));
+        panel.setPreferredSize(new Dimension(440, 300));
         panel.setLayout(null);
-        panel.setBounds(10, 10, 400, 280);
-        fondo.add(panel);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 20, 20, 20);
+        fondo.add(panel, gbc);
 
-        panel.add(new JLabel("Nombre:")).setBounds(30, 30, 100, 25);
-        txtNombre = new JTextField(); panel.add(txtNombre).setBounds(140, 30, 200, 25);
+        // Título
+        JLabel lblTitulo = new JLabel("Nuevo Producto");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitulo.setBounds(140, 10, 200, 30);
+        panel.add(lblTitulo);
 
-        panel.add(new JLabel("Precio:")).setBounds(30, 70, 100, 25);
-        txtPrecio = new JTextField(); panel.add(txtPrecio).setBounds(140, 70, 200, 25);
+        // Nombre
+        JLabel lblNombre = new JLabel("Nombre:");
+        lblNombre.setBounds(40, 60, 100, 20);
+        panel.add(lblNombre);
 
-        panel.add(new JLabel("Stock:")).setBounds(30, 110, 100, 25);
-        txtStock = new JTextField(); panel.add(txtStock).setBounds(140, 110, 200, 25);
+        txtNombre = new JTextField();
+        txtNombre.setBounds(140, 60, 250, 25);
+        panel.add(txtNombre);
 
-        btnGuardar = new JButton("Guardar");
-        btnGuardar.setBounds(140, 160, 100, 30);
+        // Precio
+        JLabel lblPrecio = new JLabel("Precio:");
+        lblPrecio.setBounds(40, 100, 100, 20);
+        panel.add(lblPrecio);
+
+        txtPrecio = new JTextField();
+        txtPrecio.setBounds(140, 100, 250, 25);
+        panel.add(txtPrecio);
+
+        // Stock
+        JLabel lblStock = new JLabel("Stock:");
+        lblStock.setBounds(40, 140, 100, 20);
+        panel.add(lblStock);
+
+        txtStock = new JTextField();
+        txtStock.setBounds(140, 140, 250, 25);
+        panel.add(txtStock);
+
+        // Botones
+        Color salmon = new Color(255, 140, 120);
+
+        JButton btnGuardar = new JButton("Guardar");
+        btnGuardar.setBackground(salmon);
+        btnGuardar.setBounds(100, 200, 110, 30);
         panel.add(btnGuardar);
 
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.setBackground(salmon);
+        btnCancelar.setBounds(230, 200, 110, 30);
+        panel.add(btnCancelar);
+
+        // Acciones botones
         btnGuardar.addActionListener(e -> {
+            String nombre = txtNombre.getText().trim();
+            String precioStr = txtPrecio.getText().trim();
+            String stockStr = txtStock.getText().trim();
+
+            if (nombre.isEmpty() || !nombre.matches("^[a-zA-ZÁÉÍÓÚáéíóúñÑ0-9\\s]{2,}$")) {
+                JOptionPane.showMessageDialog(this, "Nombre inválido (mínimo 2 caracteres alfanuméricos).");
+                return;
+            }
+
+            double precio;
+            int stock;
             try {
-                String nombre = txtNombre.getText();
-                double precio = Double.parseDouble(txtPrecio.getText());
-                int stock = Integer.parseInt(txtStock.getText());
-                conexion.agregarArticulo(nombre, precio, stock);
-                dispose();
+                precio = Double.parseDouble(precioStr);
+                if (precio <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Datos inválidos");
+                JOptionPane.showMessageDialog(this, "Introduce un precio válido (mayor que 0).");
+                return;
+            }
+
+            try {
+                stock = Integer.parseInt(stockStr);
+                if (stock < 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Introduce un stock válido (0 o mayor).");
+                return;
+            }
+
+            try {
+                conexion.agregarArticulo(nombre, precio, stock);
+                confirmado = true;
+
+                JOptionPane.showMessageDialog(this,
+                        "Producto agregado:\nNombre: " + nombre +
+                        "\nPrecio: " + precio +
+                        "\nStock: " + stock);
+
+                if (getParent() instanceof VistaInicio vistaInicio) {
+                    vistaInicio.actualizarTablasInicio();
+                }
+
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al guardar producto: " + ex.getMessage());
             }
         });
+
+        btnCancelar.addActionListener(e -> dispose());
+    }
+
+    public boolean isConfirmado() {
+        return confirmado;
     }
 }

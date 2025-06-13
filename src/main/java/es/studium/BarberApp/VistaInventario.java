@@ -1,6 +1,7 @@
 package es.studium.BarberApp;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
@@ -28,8 +29,9 @@ public class VistaInventario extends JPanel {
     private final JPanel panelFondo;
     private final RoundedPanel panelCompleto;
     private final RoundedPanel panelTablaInventario; // panel con fondo blanco semitransparente
-
+    static Color backgroundColor;
     public VistaInventario() {
+    	backgroundColor=this.backgroundColor;
         conexionBD = new ConexionBD();
         btnInicio = new JButton("Inicio");
         btnCitas = new JButton("Citas");
@@ -122,6 +124,7 @@ public class VistaInventario extends JPanel {
         tablaInventario.getSelectionModel().addListSelectionListener(e -> {
             filaSeleccionada = tablaInventario.getSelectedRow();
             boolean seleccionado = (filaSeleccionada >= 0);
+            tablaInventario.getSelectionBackground();
             btnEditar.setEnabled(seleccionado);
             btnEliminar.setEnabled(seleccionado);
         });
@@ -322,42 +325,62 @@ public class VistaInventario extends JPanel {
     // ---------------------------------------------------
     // 14) RoundedCellRenderer: idéntico a VistaCitas
     // ---------------------------------------------------
-    static class RoundedCellRenderer extends JLabel implements javax.swing.table.TableCellRenderer {
-        private final Color background;
+    static class RoundedCellRenderer extends DefaultTableCellRenderer {
+        private final Color backgroundColor;
         private final boolean isHeader;
 
-        public RoundedCellRenderer(Color background, boolean isHeader) {
-            this.background = background;
+        public RoundedCellRenderer(Color backgroundColor, boolean isHeader) {
+            this.backgroundColor = backgroundColor;
             this.isHeader = isHeader;
-            setOpaque(false);
-            setHorizontalAlignment(CENTER);
-            setFont(new Font("Segoe UI", isHeader ? Font.BOLD : Font.PLAIN, 13));
-            setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            setOpaque(false); // para que se pinte manualmente el fondo
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table,
-                                                       Object value,
-                                                       boolean isSelected,
-                                                       boolean hasFocus,
-                                                       int row,
-                                                       int column) {
-            setText(value != null ? value.toString() : "");
-            setForeground(isHeader ? Color.WHITE : new Color(70, 30, 30));
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus,
+                                                       int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // Cambiar fuente y color de texto si es encabezado
+            if (isHeader) {
+                setFont(getFont().deriveFont(Font.BOLD));
+                setForeground(Color.WHITE);
+            } else {
+                setFont(getFont().deriveFont(Font.PLAIN));
+                if (isSelected) {
+                    setForeground(Color.BLACK);
+                    setBackground(backgroundColor);
+                    // asegúrate de que el texto sea visible
+                } else {
+                    setForeground(Color.DARK_GRAY);
+                }
+            }
+
             return this;
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-            );
-            g2.setColor(background);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-            super.paintComponent(g);
+
+            // Suavizado
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int arc = 20;
+            int width = getWidth();
+            int height = getHeight();
+
+            Color fillColor = backgroundColor;
+
+            JTable table = (JTable) SwingUtilities.getAncestorOfClass(JTable.class, this);
+            if (table != null && table.getSelectedRow() == getY() / getHeight()) {
+                fillColor = new Color(255, 200, 200, 200); // color diferente para seleccionada
+            }
+
+            g2.setColor(fillColor);
+            g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc);
+
             g2.dispose();
-        }
-    }
+            super.paintComponent(g);
+        }}
 }

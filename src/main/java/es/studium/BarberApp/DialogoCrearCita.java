@@ -1,131 +1,161 @@
-// DialogoCrearCita.java
 package es.studium.BarberApp;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 public class DialogoCrearCita extends JDialog {
     private final JTextField txtCliente;
     private final JComboBox<String> cbServicio;
     private final JComboBox<String> cbHora;
     private boolean confirmado = false;
+    private ConexionBD conexion;
+    private LocalDate fecha;
+    private int usuarioId;
+	private VistaCitas vistaCitas;
+	private VistaInicio vistaInicio;
 
-    /**
-     * Constructor para crear una nueva cita.
-     * @param parent    Ventana padre.
-     * @param conexion  Instancia de ConexionBD.
-     * @param fecha     Fecha para la que se crea la cita (no editable).
-     * @param usuarioId ID del usuario que crea la cita.
-     */
-    public DialogoCrearCita(JFrame parent, ConexionBD conexion, LocalDate fecha, int usuarioId) {
+    public DialogoCrearCita(JFrame parent, ConexionBD conexion, LocalDate fecha, int usuarioId, VistaCitas vistaCitas) {
         super(parent, "Crear Cita", true);
-        setSize(450, 330);
-        setLocationRelativeTo(parent);
-        setLayout(null);
+        this.conexion = conexion;
+        this.fecha = fecha;
+        this.usuarioId = usuarioId;
+        this.vistaCitas = vistaCitas;  
+        this.vistaInicio = vistaInicio;        
 
-        // Panel de fondo con imagen
-        JPanel panel = new JPanel(null) {
-            private final Image imagenFondo = new ImageIcon(
-                "src/main/resources/es/studium/recursos/FondoApp.png"
-            ).getImage();
+        this.conexion = conexion;
+        this.fecha = fecha;
+        this.usuarioId = usuarioId;
+
+        setSize(540, 380);
+        setResizable(false);
+        setLocationRelativeTo(parent);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        // Fondo con imagen
+        JPanel fondo = new JPanel(new GridBagLayout()) {
+            private final Image img = new ImageIcon("src/main/resources/es/studium/recursos/FondoApp.png").getImage();
+
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
+                g.drawImage(img, 0, 0, getWidth(), getHeight(), this);
             }
         };
-        panel.setBounds(0, 0, 450, 330);
-        add(panel);
+        setContentPane(fondo);
 
-        // Panel interior blanco redondeado
-        VistaLogin.RoundedPanel panelContenido = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 230));
-        panelContenido.setLayout(null);
-        panelContenido.setBounds(25, 25, 400, 250);
-        panel.add(panelContenido);
+        // Panel blanco translúcido y centrado
+        VistaLogin.RoundedPanel panel = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 200));
+        panel.setPreferredSize(new Dimension(440, 300));
+        panel.setLayout(null);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 20, 20, 20);
+        fondo.add(panel, gbc);
 
         // Título
         JLabel lblTitulo = new JLabel("Nueva Cita");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitulo.setBounds(140, 10, 200, 30);
-        panelContenido.add(lblTitulo);
+        lblTitulo.setBounds(160, 10, 150, 30);
+        panel.add(lblTitulo);
 
-        // Fecha (solo etiqueta, no editable)
+        // Fecha fija (no editable)
         JLabel lblFecha = new JLabel("Fecha:");
-        lblFecha.setBounds(30, 60, 100, 20);
-        panelContenido.add(lblFecha);
+        lblFecha.setBounds(40, 60, 100, 20);
+        panel.add(lblFecha);
 
-        String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        JLabel lblFechaValor = new JLabel(fechaStr);
-        lblFechaValor.setBounds(130, 60, 220, 25);
-        panelContenido.add(lblFechaValor);
+        JLabel lblFechaValor = new JLabel(fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        lblFechaValor.setBounds(140, 60, 250, 25);
+        panel.add(lblFechaValor);
 
         // Cliente
         JLabel lblCliente = new JLabel("Cliente:");
-        lblCliente.setBounds(30, 100, 100, 20);
-        panelContenido.add(lblCliente);
+        lblCliente.setBounds(40, 100, 100, 20);
+        panel.add(lblCliente);
 
         txtCliente = new JTextField();
-        txtCliente.setBounds(130, 100, 220, 25);
-        panelContenido.add(txtCliente);
+        txtCliente.setBounds(140, 100, 250, 25);
+        panel.add(txtCliente);
 
         // Servicio
         JLabel lblServicio = new JLabel("Servicio:");
-        lblServicio.setBounds(30, 140, 100, 20);
-        panelContenido.add(lblServicio);
+        lblServicio.setBounds(40, 140, 100, 20);
+        panel.add(lblServicio);
 
         cbServicio = new JComboBox<>();
-        cbServicio.setBounds(130, 140, 220, 25);
-        // Poblar servicios:
-        for (String s : conexion.obtenerServicios()) {
-            cbServicio.addItem(s);
+        List<Map<String, Object>> servicios = conexion.obtenerServicios();
+        for (Map<String, Object> servicio : servicios) {
+            cbServicio.addItem(servicio.get("nombre").toString());
         }
-        panelContenido.add(cbServicio);
+        cbServicio.setBounds(140, 140, 250, 25);
+        panel.add(cbServicio);
 
         // Hora
         JLabel lblHora = new JLabel("Hora:");
-        lblHora.setBounds(30, 180, 100, 20);
-        panelContenido.add(lblHora);
+        lblHora.setBounds(40, 180, 100, 20);
+        panel.add(lblHora);
 
         cbHora = new JComboBox<>();
-        cbHora.setBounds(130, 180, 220, 25);
-        // Poblar horas disponibles para esa fecha:
-        List<java.time.LocalTime> horasDisponibles = conexion.consultarHorasDisponibles(fechaStr);
+        String fechaParaConsulta = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        List<java.time.LocalTime> horasDisponibles = conexion.consultarHorasDisponibles(fechaParaConsulta);
         for (java.time.LocalTime lt : horasDisponibles) {
             cbHora.addItem(lt.toString());
         }
-        panelContenido.add(cbHora);
+        cbHora.setBounds(140, 180, 250, 25);
+        panel.add(cbHora);
 
-        // Botón Guardar
+        // Botones
+        Color salmon = new Color(255, 140, 120);
+
         JButton btnGuardar = new JButton("Guardar");
-        btnGuardar.setBounds(140, 215, 120, 30);
+        btnGuardar.setBackground(salmon);
+        btnGuardar.setBounds(100, 240, 110, 30);
+        panel.add(btnGuardar);
+
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.setBackground(salmon);
+        btnCancelar.setBounds(230, 240, 110, 30);
+        panel.add(btnCancelar);
+
+        // Acción guardar
         btnGuardar.addActionListener(e -> {
             String cliente = txtCliente.getText().trim();
             String servicio = (String) cbServicio.getSelectedItem();
             String horaSel = (String) cbHora.getSelectedItem();
 
-            // Validaciones
             if (cliente.isEmpty() || !cliente.matches("^[a-zA-ZÁÉÍÓÚáéíóúñÑ\\s]{3,}$")) {
-                JOptionPane.showMessageDialog(this, "Nombre de cliente inválido.");
+                JOptionPane.showMessageDialog(this, "Nombre de cliente inválido (mínimo 3 letras).");
                 return;
             }
             if (horaSel == null) {
                 JOptionPane.showMessageDialog(this, "Selecciona una hora.");
                 return;
             }
-            int servicioId = cbServicio.getSelectedIndex() + 1; // asumiendo IDs consecutivos
+
+            int servicioId = cbServicio.getSelectedIndex() + 1;
+
             try {
-                conexion.agregarCita(cliente, servicioId, fechaStr, horaSel, usuarioId);
+                conexion.agregarCita(cliente, servicioId, fechaParaConsulta, horaSel, usuarioId);
                 confirmado = true;
+
+                // Actualizar tablas en VistaInicio y VistaCitas si es posible
+                if (vistaInicio != null) {
+                    vistaInicio.actualizarTablasInicio();
+                }
+                if (vistaCitas != null) {
+                    vistaCitas.cargarTusCitas(fecha);
+                }
+
+                JOptionPane.showMessageDialog(this, "Cita creada correctamente.");
                 dispose();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al crear cita: " + ex.getMessage());
             }
         });
-        panelContenido.add(btnGuardar);
+
+        btnCancelar.addActionListener(e -> dispose());
     }
 
     public boolean isConfirmado() {

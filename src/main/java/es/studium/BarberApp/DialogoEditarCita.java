@@ -1,120 +1,146 @@
-// DialogoEditarCita.java
 package es.studium.BarberApp;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public class DialogoEditarCita extends JDialog {
     private final JTextField txtCliente;
     private final JComboBox<String> cbServicio;
-    private final JComboBox<String> cbHora;
+    private JComboBox<String> cbHora;
     private boolean confirmado = false;
 
-    /**
-     * Constructor para editar una cita existente.
-     * @param parent  Ventana padre.
-     * @param conexion Instancia de ConexionBD.
-     * @param cita    Objeto Cita con datos a editar (incluye id, fecha, hora, cliente, servicio).
-     */
     public DialogoEditarCita(JFrame parent, ConexionBD conexion, Cita cita) {
         super(parent, "Editar Cita", true);
-        setSize(450, 330);
+        setSize(500, 380);
         setLocationRelativeTo(parent);
-        setLayout(null);
+        setLayout(new BorderLayout());
 
-        // Panel fondo con imagen
-        JPanel panel = new JPanel(null) {
-            private final Image imagenFondo = new ImageIcon(
-                "src/main/resources/es/studium/recursos/FondoApp.png"
-            ).getImage();
+        // Panel con fondo personalizado
+        JPanel fondo = new JPanel() {
+            private final Image fondoImg = new ImageIcon("src/main/resources/es/studium/recursos/FondoApp.png").getImage();
+
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
+                g.drawImage(fondoImg, 0, 0, getWidth(), getHeight(), this);
             }
         };
-        panel.setBounds(0, 0, 450, 330);
-        add(panel);
+        fondo.setLayout(new GridBagLayout());
+        add(fondo, BorderLayout.CENTER);
 
-        // Panel interior redondeado
-        VistaLogin.RoundedPanel panelContenido = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 230));
-        panelContenido.setLayout(null);
-        panelContenido.setBounds(25, 25, 400, 250);
-        panel.add(panelContenido);
+        // Panel translúcido principal
+        VistaLogin.RoundedPanel panelContenido = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 200));
+        panelContenido.setLayout(new GridBagLayout());
+        panelContenido.setPreferredSize(new Dimension(440, 300));
+        panelContenido.setOpaque(false);
+        panelContenido.setBorder(new EmptyBorder(20, 30, 20, 30));
+        fondo.add(panelContenido);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
 
         // Título
         JLabel lblTitulo = new JLabel("Editar Cita");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitulo.setBounds(140, 10, 200, 30);
-        panelContenido.add(lblTitulo);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        panelContenido.add(lblTitulo, gbc);
 
-        // Fecha (no editable)
-        JLabel lblFecha = new JLabel("Fecha:");
-        lblFecha.setBounds(30, 60, 100, 20);
-        panelContenido.add(lblFecha);
+        gbc.gridwidth = 1;
+        gbc.anchor = GridBagConstraints.WEST;
 
-        String fechaStr = cita.getFecha(); // “yyyy-MM-dd”
-        JLabel lblFechaValor = new JLabel(fechaStr);
-        lblFechaValor.setBounds(130, 60, 220, 25);
-        panelContenido.add(lblFechaValor);
+        // Fecha (formateada)
+        gbc.gridy++;
+        panelContenido.add(new JLabel("Fecha:"), gbc);
+
+        gbc.gridx = 1;
+        LocalDate fecha = LocalDate.parse(cita.getFecha(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String fechaFormateada = fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        JLabel lblFecha = new JLabel(fechaFormateada);
+        panelContenido.add(lblFecha, gbc);
 
         // Cliente
-        JLabel lblCliente = new JLabel("Cliente:");
-        lblCliente.setBounds(30, 100, 100, 20);
-        panelContenido.add(lblCliente);
+        gbc.gridy++;
+        gbc.gridx = 0;
+        panelContenido.add(new JLabel("Cliente:"), gbc);
 
+        gbc.gridx = 1;
         txtCliente = new JTextField(cita.getClienteNombre());
-        txtCliente.setBounds(130, 100, 220, 25);
-        panelContenido.add(txtCliente);
+        txtCliente.setPreferredSize(new Dimension(200, 25));
+        txtCliente.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        panelContenido.add(txtCliente, gbc);
 
-        // Servicio
-        JLabel lblServicio = new JLabel("Servicio:");
-        lblServicio.setBounds(30, 140, 100, 20);
-        panelContenido.add(lblServicio);
+     // Servicio
+        gbc.gridy++;
+        gbc.gridx = 0;
+        panelContenido.add(new JLabel("Servicio:"), gbc);
 
+        gbc.gridx = 1;
         cbServicio = new JComboBox<>();
-        cbServicio.setBounds(130, 140, 220, 25);
-        // Poblar servicios y seleccionar el actual
-        List<String> servicios = conexion.obtenerServicios();
-        for (String s : servicios) {
-            cbServicio.addItem(s);
+        List<Map<String, Object>> servicios = conexion.obtenerServicios();
+        for (Map<String, Object> servicio : servicios) {
+            cbServicio.addItem((String) servicio.get("nombre"));
         }
-        cbServicio.setSelectedIndex(cita.getServicioId() - 1);
-        panelContenido.add(cbServicio);
+        // Seleccionar el servicio actual de la cita
+        for (int i = 0; i < servicios.size(); i++) {
+            if (servicios.get(i).get("nombre").equals(cita.getServicioNombre())) {
+                cbServicio.setSelectedIndex(i);
+                break;
+            }
+        }
+        panelContenido.add(cbServicio, gbc);
 
         // Hora
-        JLabel lblHora = new JLabel("Hora:");
-        lblHora.setBounds(30, 180, 100, 20);
-        panelContenido.add(lblHora);
+        gbc.gridy++;
+        gbc.gridx = 0;
+        panelContenido.add(new JLabel("Hora:"), gbc);
 
+        gbc.gridx = 1;
         cbHora = new JComboBox<>();
-        cbHora.setBounds(130, 180, 220, 25);
-        // Poblar horas disponibles para esa fecha, pero dejar la hora original al principio
-        String horaOrig = cita.getHora(); // “HH:mm:ss” o “HH:mm”
-        cbHora.addItem(horaOrig);
-        List<java.time.LocalTime> horasDisponibles = conexion.consultarHorasDisponibles(fechaStr);
-        for (java.time.LocalTime lt : horasDisponibles) {
-            String hs = lt.toString();
-            if (!hs.equals(horaOrig)) {
+        String horaOriginal = cita.getHora();
+        cbHora.addItem(horaOriginal); // Añadir hora actual
+
+        List<java.time.LocalTime> horasDisponibles = conexion.consultarHorasDisponibles(cita.getFecha());
+        for (java.time.LocalTime hora : horasDisponibles) {
+            String hs = hora.toString();
+            if (!hs.equals(horaOriginal)) {
                 cbHora.addItem(hs);
             }
         }
-        panelContenido.add(cbHora);
+        panelContenido.add(cbHora, gbc);
 
-        // Botón Guardar
+        // Botones
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        panelBotones.setOpaque(false);
+        Color salmon = new Color(255, 140, 120);
+
         JButton btnGuardar = new JButton("Guardar");
-        btnGuardar.setBounds(140, 215, 120, 30);
+        btnGuardar.setBackground(salmon);
+        btnGuardar.setFocusPainted(false);
+        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnGuardar.addActionListener(e -> {
             String cliente = txtCliente.getText().trim();
-            String servicioSel = (String) cbServicio.getSelectedItem();
+            String servicioNombre = (String) cbServicio.getSelectedItem();
             String horaSel = (String) cbHora.getSelectedItem();
 
-            // Validaciones
             if (cliente.isEmpty() || !cliente.matches("^[a-zA-ZÁÉÍÓÚáéíóúñÑ\\s]{3,}$")) {
                 JOptionPane.showMessageDialog(this, "Nombre de cliente inválido.");
                 return;
@@ -123,18 +149,39 @@ public class DialogoEditarCita extends JDialog {
                 JOptionPane.showMessageDialog(this, "Selecciona una hora.");
                 return;
             }
-            int servicioId = cbServicio.getSelectedIndex() + 1;
+
             try {
-                conexion.modificarCita(cita.getId(), cliente, servicioId, cita.getFecha(), horaSel, cita.getUsuarioId());
+                int servicioId = cbServicio.getSelectedIndex() + 1;
+
+                conexion.modificarCita(
+                	    cita.getId(),
+                	    cliente,
+                	    servicioId,
+                	    cita.getFecha(),
+                	    horaSel,
+                	    SesionUsuario.usuarioId // <-- aquí debe ir el ID del usuario autenticado
+                	);
+
+
                 confirmado = true;
+                JOptionPane.showMessageDialog(this, "Cita Modificada con exito.");
+
                 dispose();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al modificar cita: " + ex.getMessage());
             }
         });
-        panelContenido.add(btnGuardar);
-    }
+        panelBotones.add(btnGuardar);
 
+        JButton btnCancelar = new JButton("Cancelar");
+        btnCancelar.setBackground(salmon);
+        btnCancelar.setFocusPainted(false);
+        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnCancelar.addActionListener(e -> dispose());
+        panelBotones.add(btnCancelar);
+
+        panelContenido.add(panelBotones, gbc);
+    }
     public boolean isConfirmado() {
         return confirmado;
     }

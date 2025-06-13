@@ -26,7 +26,9 @@ public class RoundedCellRenderer extends DefaultTableCellRenderer {
         } else {
             setFont(getFont().deriveFont(Font.PLAIN));
             if (isSelected) {
-                setForeground(Color.BLACK); // asegúrate de que el texto sea visible
+                setForeground(Color.BLACK);
+                setBackground(backgroundColor);
+                // asegúrate de que el texto sea visible
             } else {
                 setForeground(Color.DARK_GRAY);
             }

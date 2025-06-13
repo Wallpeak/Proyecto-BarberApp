@@ -6,7 +6,6 @@ import java.awt.event.*;
 import java.time.*;
 import java.time.format.TextStyle;
 import java.util.Locale;
-import java.util.ArrayList;
 
 public class Calendario extends JPanel {
 
@@ -14,6 +13,7 @@ public class Calendario extends JPanel {
     private JPanel panelDias;
     private JLabel lblMesAno;
     private FechaSeleccionadaListener listener;
+    private JFrame framePadre; // Para pasar al diálogo
 
     private final Color COLOR_FONDO = new Color(255, 240, 240, 200);
     private final Color COLOR_SELECCION = new Color(255, 180, 160, 180);
@@ -23,7 +23,9 @@ public class Calendario extends JPanel {
 
     private LocalDate fechaSeleccionada;
 
-    public Calendario() {
+    public Calendario(JFrame framePadre) {
+        this.framePadre = framePadre;
+
         mesActual = LocalDate.now().withDayOfMonth(1);
         fechaSeleccionada = LocalDate.now();
 
@@ -64,6 +66,10 @@ public class Calendario extends JPanel {
         add(panelDias, BorderLayout.CENTER);
 
         actualizarCalendario();
+
+        // Para que el panel sea totalmente resizable:
+        // BorderLayout y GridLayout con 0 filas hace que se adapte automáticamente
+        // No es necesario cambiar nada más aquí, solo que el contenedor padre tenga layout que permita crecer.
     }
 
     private JButton crearBoton(String texto) {
@@ -141,7 +147,8 @@ public class Calendario extends JPanel {
     private class DiaPanel extends JPanel {
         private final int dia;
         private final LocalDate fecha;
-        private boolean seleccionado = false;
+		private VistaCitas vistaCitas;
+		
 
         public DiaPanel(int dia, LocalDate fecha) {
             this.dia = dia;
@@ -152,11 +159,16 @@ public class Calendario extends JPanel {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    fechaSeleccionada = fecha;
-                    if (listener != null) {
-                        listener.fechaSeleccionada(fecha);
+                    // Si es doble clic con botón izquierdo
+                    if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                        abrirDialogoCrearCita(fecha);
+                    } else {
+                        fechaSeleccionada = fecha;
+                        if (listener != null) {
+                            listener.fechaSeleccionada(fecha);
+                        }
+                        actualizarCalendario();
                     }
-                    actualizarCalendario();
                 }
 
                 @Override
@@ -164,6 +176,27 @@ public class Calendario extends JPanel {
                     setToolTipText("Fecha: " + fecha.toString());
                 }
             });
+        }
+
+        private void abrirDialogoCrearCita(LocalDate fecha) {
+            ConexionBD bd = new ConexionBD();  // O usa una instancia compartida si la tienes
+            
+            int usuarioId = SesionUsuario.usuarioId; // ID del usuario activo
+            
+            // Comprobar que el usuario existe en la base de datos antes de abrir el diálogo
+            if (!bd.existeUsuario(usuarioId)) {
+                JOptionPane.showMessageDialog(null, "Usuario no válido o no existe en la base de datos.");
+                return;
+            }
+            
+            // Usar el JFrame padre real (por ejemplo framePadre) para centrar el diálogo
+            DialogoCrearCita dialogo = new DialogoCrearCita(framePadre, bd, fecha, usuarioId, vistaCitas);
+            
+            dialogo.setLocationRelativeTo(framePadre);
+            dialogo.setVisible(true);
+            
+            // Aquí puedes refrescar el calendario o tabla tras cerrar el diálogo, si lo deseas
+            // actualizarCalendario();
         }
 
         @Override

@@ -114,13 +114,13 @@ public class VistaRegistro extends JPanel {
             }
 
             ConexionBD bd = new ConexionBD();
-            if (bd.usuarioYaExiste(usuario, correo)) {
+            if (bd.usuarioYaExiste(usuario)) {
                 JOptionPane.showMessageDialog(this, "El usuario o correo ya está registrado.");
                 return;
             }
 
             String hashed = hashPassword(pass1);
-            bd.agregarUsuario(usuario, correo, hashed);
+            bd.agregarUsuario(usuario,hashed, correo, 0);
             JOptionPane.showMessageDialog(this, "Registro completado correctamente.");
 
             if (listener != null) listener.onRegistroSuccess();

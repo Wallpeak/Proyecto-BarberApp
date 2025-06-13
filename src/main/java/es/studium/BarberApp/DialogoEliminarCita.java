@@ -1,9 +1,7 @@
-// DialogoEliminarCita.java
 package es.studium.BarberApp;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 /**
  * Pequeño diálogo de confirmación de borrado de cita.
@@ -22,9 +20,10 @@ public class DialogoEliminarCita extends JDialog {
         super(parent, "Eliminar Cita", true);
         setSize(400, 200);
         setLocationRelativeTo(parent);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(null);
 
-        // Panel fondo con imagen
+        // Panel de fondo con imagen
         JPanel panel = new JPanel(null) {
             private final Image imagenFondo = new ImageIcon(
                 "src/main/resources/es/studium/recursos/FondoApp.png"
@@ -38,7 +37,7 @@ public class DialogoEliminarCita extends JDialog {
         panel.setBounds(0, 0, 400, 200);
         add(panel);
 
-        // Panel interior redondeado
+        // Panel interior redondeado translúcido
         VistaLogin.RoundedPanel panelContenido = new VistaLogin.RoundedPanel(30, new Color(255, 255, 255, 230));
         panelContenido.setLayout(null);
         panelContenido.setBounds(25, 25, 350, 130);
@@ -52,7 +51,11 @@ public class DialogoEliminarCita extends JDialog {
 
         // Botón “Eliminar”
         JButton btnEliminar = new JButton("Eliminar");
-        btnEliminar.setBounds(60, 70, 100, 30);
+        btnEliminar.setBounds(60, 80, 100, 35);
+        btnEliminar.setBackground(new Color(255, 153, 153));
+        btnEliminar.setForeground(Color.BLACK);
+        btnEliminar.setFocusPainted(false);
+        btnEliminar.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnEliminar.addActionListener(e -> {
             try {
                 conexion.eliminarCita(citaId);
@@ -66,7 +69,11 @@ public class DialogoEliminarCita extends JDialog {
 
         // Botón “Cancelar”
         JButton btnCancelar = new JButton("Cancelar");
-        btnCancelar.setBounds(180, 70, 100, 30);
+        btnCancelar.setBounds(190, 80, 100, 35);
+        btnCancelar.setBackground(new Color(255, 153, 153));
+        btnCancelar.setForeground(Color.BLACK);
+        btnCancelar.setFocusPainted(false);
+        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnCancelar.addActionListener(e -> {
             confirmado = false;
             dispose();

@@ -26,13 +26,14 @@ public class VistaInicio extends JFrame {
     public VistaInventario panelInventario;
     private VistaLogin panelLogin;
     private VistaRegistro panelRegistro;
-
+    private ConexionBD bd;
     private JTable tablaInventario;
     private JTable tablaCitasHoy;
     private DefaultTableModel modeloInventario;
     private DefaultTableModel modeloCitas;
 
     public VistaInicio() {
+    	bd=new ConexionBD();
         setTitle("THE BARBER SHOP");
         setSize(1200, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -178,8 +179,8 @@ public class VistaInicio extends JFrame {
 
     public void cambiarVista(String vista) {
         cardLayout.show(cardPanel, vista);
-        setTitle("The Barber Shop - " + vista);
-    }
+        actualizarTablasInicio();
+        setTitle("The Barber Shop - " + vista);    }
 
     public void setUserSession(String usuario, int tipoUsuario) {
         SesionUsuario.nombreUsuario = usuario;
@@ -283,13 +284,12 @@ public class VistaInicio extends JFrame {
 
         // Panel redondeado semitransparente para Inventario
         RoundedPanel panelInventarioFondo = new RoundedPanel(
-            new Color(255, 255, 255, 220),  // blanco semitransparente
-            25
+            new Color(255, 255, 255, 220), 25
         );
         panelInventarioFondo.setLayout(new BorderLayout(10, 10));
         panel.add(panelInventarioFondo);
 
-        // Configurar la tabla de Inventario con el estilo de VistaCitas
+        // Tabla de Inventario
         tablaInventario.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tablaInventario.setRowHeight(28);
         tablaInventario.setShowGrid(false);
@@ -311,13 +311,12 @@ public class VistaInicio extends JFrame {
 
         // Panel redondeado semitransparente para Citas
         RoundedPanel panelCitasFondo = new RoundedPanel(
-            new Color(255, 255, 255, 220),
-            25
+            new Color(255, 255, 255, 220), 25
         );
         panelCitasFondo.setLayout(new BorderLayout(10, 10));
         panel.add(panelCitasFondo);
 
-        // Configurar la tabla de Citas con el estilo de VistaCitas
+        // Tabla de Citas del Día
         tablaCitasHoy.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tablaCitasHoy.setRowHeight(28);
         tablaCitasHoy.setShowGrid(false);
@@ -337,7 +336,7 @@ public class VistaInicio extends JFrame {
         scrollCitas.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         panelCitasFondo.add(scrollCitas, BorderLayout.CENTER);
 
-        // Ajuste de posiciones al redimensionar
+        // Ajuste de posiciones
         panel.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -377,8 +376,12 @@ public class VistaInicio extends JFrame {
             }
         });
 
+        
+        actualizarTablasInicio();
+
         return panel;
     }
+
 
 
     public void actualizarTablasInicio() {
@@ -387,16 +390,18 @@ public class VistaInicio extends JFrame {
 
         ConexionBD conexion = new ConexionBD();
 
-        ArrayList<Object[]> articulos = conexion.obtenerArticulosConMenorStock();
+        // Obtener artículos con menor stock y llenar la tabla
+        ArrayList<Object[]> articulos = conexion.consultarMenorStock();
         for (Object[] fila : articulos) {
             modeloInventario.addRow(new Object[]{fila[0], fila[1]});
         }
 
+        // Obtener citas del usuario activo para hoy y llenar la tabla
         ArrayList<Object[]> citas = conexion.obtenerCitasPorUsuarioYFechaHoy(SesionUsuario.usuarioId);
         for (Object[] fila : citas) {
-            modeloCitas.addRow(new Object[]{fila[0], fila[1], fila[2]});
-        }
+        	modeloCitas.addRow(new Object[]{fila[1], fila[2], fila[3]});        }
     }
+
 
     /**
      * Crea un JTable con el mismo estilo que “Tus Citas” en VistaCitas:
